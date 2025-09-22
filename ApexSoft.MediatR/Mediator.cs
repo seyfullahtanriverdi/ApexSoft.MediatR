@@ -1,48 +1,28 @@
-﻿using ApexSoft.MediatR.Options;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace ApexSoft.MediatR
 {
     public static class Mediator
     {
-        public static IServiceCollection AddMediator(this IServiceCollection services,
-        Action<MediatROptions> options)
+        public static IServiceCollection AddMyMediator(this IServiceCollection services, Assembly? assembly = null)
         {
-            if (options is null) throw new ArgumentNullException(nameof(options));
+            assembly ??= Assembly.GetCallingAssembly();
 
-            var config = new MediatROptions();
-            options(config);
+            services.AddScoped<ISender, Sender>();
 
-            foreach (var assembly in config.Assemblies)
+            var handlerInterfaceType = typeof(IRequestHandler<,>);
+
+            var handlerTypes = assembly
+                .GetTypes()
+                .Where(type => !type.IsAbstract && !type.IsInterface)
+                .SelectMany(type => type.GetInterfaces()
+                    .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == handlerInterfaceType)
+                    .Select(i => new { Interface = i, Implementation = type }));
+
+            foreach (var handler in handlerTypes)
             {
-                var types = assembly.GetTypes().Where(t => !t.IsInterface && !t.IsAbstract);
-
-                var handlerTypes = types.SelectMany(t => t
-                    .GetInterfaces()
-                    .Where(i => i.IsGenericType && (i.GetGenericTypeDefinition() == typeof(IRequestHandler<,>)))
-                    .Select(s => new { Interface = s, Impletation = t }));
-
-                services.AddScoped<ISender, Sender>();
-
-                foreach (var item in handlerTypes)
-                {
-                    services.AddScoped(item.Interface, item.Impletation);
-                }
-            }
-
-
-            foreach (var pipeline in config.PipelineBehaviors)
-            {
-                var genericArg = pipeline.GetGenericArguments().Length;
-
-                if (genericArg == 2)
-                {
-                    services.AddScoped(typeof(IPipelineBehavior<,>), pipeline);
-                }
-                else
-                {
-                    throw new ArgumentOutOfRangeException(nameof(genericArg));
-                }
+                services.AddScoped(handler.Interface, handler.Implementation);
             }
 
             return services;
