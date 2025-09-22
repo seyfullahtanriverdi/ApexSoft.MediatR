@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36429.23 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ApexSoft.MediatR", "ApexSoft.MediatR\ApexSoft.MediatR.csproj", "{839D476C-0FA0-4899-A6E9-B3896118C683}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{839D476C-0FA0-4899-A6E9-B3896118C683}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{839D476C-0FA0-4899-A6E9-B3896118C683}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{839D476C-0FA0-4899-A6E9-B3896118C683}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{839D476C-0FA0-4899-A6E9-B3896118C683}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9E8347B1-8560-4D24-9CC7-9E27F0871EC5}
+	EndGlobalSection
+EndGlobal
