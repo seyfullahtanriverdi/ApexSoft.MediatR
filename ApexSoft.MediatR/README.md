@@ -1,82 +1,161 @@
 ﻿# ApexSoft.MediatR
-ApexSoft.MediatR, .NET projelerinizde CQRS (Command Query Responsibility Segregation) desenini uygulamanızı sağlayan, hafif ve yüksek performanslı bir Mediator kütüphanesidir. Bu kütüphane, özellikle .NET Framework 4.8 gibi legacy sürümlerden .NET 9.0 gibi modern sürümlere kadar geniş bir yelpazede çalışan projeler için MediatR kütüphanesine alternatif olarak geliştirilmiştir.
 
-🚀 Özellikler
-Hafif ve Hızlı: Gereksiz bağımlılıklardan arındırılmış saf CQRS yapısı.
+ApexSoft.MediatR is a lightweight and high-performance Mediator library that enables you to implement the 
+CQRS (Command Query Responsibility Segregation) pattern in your .NET projects.
+This library was developed as an alternative to the MediatR library, specifically optimized for a wide range of projects, 
+including modern versions like .NET 8.0 and .NET 9.0.
 
-Multi-Targeting: .NET Framework 4.8, 6.0, 7.0, 8.0 ve 9.0 sürümleriyle tam uyumludur.
+Features
+1. Lightweight and Fast: A pure CQRS structure stripped of unnecessary dependencies.
+2. Multi-Targeting: Fully compatible with .NET 8.0 and 9.0 versions.
+3. Easy Integration: Offers single-line registration via IServiceCollection.
+4. Modern C# Support: Supports Primary Constructors and modern syntax features.
 
-Kolay Entegrasyon: IServiceCollection üzerinden tek satırla kayıt imkanı sunar.
+Installation
+You can automatically register all Handler structures by adding the following definition to the part of 
+your project where dependencies are managed (e.g., the ApplicationRegistration class):
 
-Modern C# Desteği: Primary Constructors ve modern syntax özelliklerini destekler.
+Registering — Program.cs
 
-🛠 Kurulum
-Projenizde bağımlılıkların yönetildiği kısımda (örneğin ApplicationRegistration sınıfı) aşağıdaki tanımlamayı yaparak tüm Handler yapılarını otomatik olarak kaydedebilirsiniz:
+    using ApexSoft.MediatR;
 
-C#
-public static class ApplicationRegistration
-{
-    public static void AddApplicationServices(this IServiceCollection services)
+    var builder = WebApplication.CreateBuilder(args);
+
+    // Tüm handler'ları otomatik tarar ve register eder
+    builder.Services.AddMediator(
+        handlerLifetime: ServiceLifetime.Scoped,
+        assemblies: typeof(Program).Assembly
+    );
+
+If you want to scan multiple assemblies:
+
+    csharpbuilder.Services.AddMediator(
+        handlerLifetime: ServiceLifetime.Scoped,
+        assemblies: typeof(Program).Assembly,
+                  typeof(SomeOtherClass).Assembly
+    );
+
+Usage Examples
+Query — Returning a Response
+
+    // GetUserQuery.cs
+    public record GetUserQuery(int Id) : IRequest<UserDto>;
+
+    public class GetUserQueryHandler : IRequestHandler<GetUserQuery, UserDto>
     {
-        // Belirtilen Assembly içindeki tüm IRequestHandler yapılarını tarar ve kaydeder.
-        services.AddMediator(typeof(ApplicationRegistration).Assembly);
-    }
-}
+        private readonly AppDbContext _db;
+        public GetUserQueryHandler(AppDbContext db) => _db = db;
 
-📖 Örnek Kullanım
-1. Query ve Handler Tanımlama
-İş mantığınızı Query ve Handler olarak tek bir dosyada organize ederek kod okunabilirliğini artırabilirsiniz:
-
-C#
-public class GetAllDriverQuery : IRequest<ServiceResponse<IEnumerable<DriverDto>>>
-{
-    public QueryOptions QueryOptions { get; set; }
-
-    public class GetAllDriverQueryHandler : IRequestHandler<GetAllDriverQuery, ServiceResponse<IEnumerable<DriverDto>>>
-    {
-        private readonly IDriverRepository _driverRepository;
-        private readonly IMapper _mapper;
-
-        public GetAllDriverQueryHandler(IDriverRepository driverRepository, IMapper mapper)
+        public async Task<UserDto> Handle(GetUserQuery request, CancellationToken ct)
         {
-            _driverRepository = driverRepository;
-            _mapper = mapper;
+            var user = await _db.Users.FindAsync(request.Id, ct);
+            return new UserDto(user.Id, user.Name);
+        }
+    }
+
+Command — Void (Unit)
+
+    // GetUserQuery.cs
+    public record CreateUserCommand(string Name, string Email) : IRequest;
+
+    public class CreateUserCommandHandler : IRequestHandler<CreateUserCommand>
+    {
+        private readonly AppDbContext _db;
+        public CreateUserCommandHandler(AppDbContext db) => _db = db;
+
+        public async Task<Unit> Handle(CreateUserCommand request, CancellationToken ct)
+        {
+            _db.Users.Add(new User { Name = request.Name, Email = request.Email });
+            await _db.SaveChangesAsync(ct);
+            return Unit.Value;
+        }
+    }
+
+Notification — Publishing Events
+
+    //UserCreatedEvent.cs
+    public record UserCreatedEvent(string Name, string Email) : INotification;
+
+    // İlk handler
+    public class SendWelcomeEmailHandler : INotificationHandler<UserCreatedEvent>
+    {
+        public async Task Handle(UserCreatedEvent notification, CancellationToken ct)
+        {
+            // email gönder...
+        }
+    }
+
+    // İkinci handler (aynı event'e birden fazla handler olabilir)
+    public class LogUserCreatedHandler : INotificationHandler<UserCreatedEvent>
+    {
+        public async Task Handle(UserCreatedEvent notification, CancellationToken ct)
+        {
+            // log yaz...
+        }
+    }
+
+Pipeline Behavior — Cross-cutting Concerns
+    
+    // LoggingBehavior.cs
+    public class LoggingBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+        where TRequest : IRequest<TResponse>
+    {
+        private readonly ILogger<LoggingBehavior<TRequest, TResponse>> _logger;
+        public LoggingBehavior(ILogger<LoggingBehavior<TRequest, TResponse>> logger) => _logger = logger;
+
+        public async Task<TResponse> Handle(TRequest request, CancellationToken ct, Func<Task<TResponse>> next)
+        {
+            _logger.LogInformation("Handling {RequestType}", typeof(TRequest).Name);
+            var response = await next();
+            _logger.LogInformation("Handled {RequestType}", typeof(TRequest).Name);
+            return response;
+        }
+    }
+
+Usage in Controllers or Minimal APIs
+Minimal API
+
+    csharpapp.MapGet("/users/{id}", async (int id, ISender sender, CancellationToken ct) =>
+    {
+        var result = await sender.Send(new GetUserQuery(id), ct);
+        return Results.Ok(result);
+    });
+
+    app.MapPost("/users", async (CreateUserCommand command, ISender sender, CancellationToken ct) =>
+    {
+        await sender.Send(command, ct);
+        return Results.Created();
+    });
+
+Controller
+
+    [ApiController]
+    [Route("api/[controller]")]
+    public class UsersController(ISender sender) : ControllerBase
+    {
+        [HttpGet("{id}")]
+        public async Task<IActionResult> Get(int id, CancellationToken ct)
+        {
+            var result = await sender.Send(new GetUserQuery(id), ct);
+            return Ok(result);
         }
 
-        public async Task<ServiceResponse<IEnumerable<DriverDto>>> Handle(GetAllDriverQuery request, CancellationToken cancellationToken)
+        [HttpPost]
+        public async Task<IActionResult> Create(CreateUserCommand command, CancellationToken ct)
         {
-            var driverEntities = await _driverRepository.GetAllAsync(request.QueryOptions);
-            var driverDtos = _mapper.Map<List<DriverDto>>(driverEntities);
-            
-            return new ServiceResponse<IEnumerable<DriverDto>>(driverDtos, 200, "Success");
+            await sender.Send(command, ct);
+            return Created();
+        }
+
+        [HttpPost("{id}/notify")]
+        public async Task<IActionResult> Notify(int id, IMediator mediator, CancellationToken ct)
+        {
+            await mediator.Publish(new UserCreatedEvent("Ad", "email@test.com"), ct);
+            return Ok();
         }
     }
-}
 
-2. Controller İçinde Kullanım
-Handler'ı tetiklemek için ISender arayüzünü enjekte etmeniz yeterlidir:
+Architecture
+This library allows you to manage commands and queries independently, in accordance with Onion Architecture or Clean Architecture principles.
 
-C#
-public class DriverController : ControllerBase
-{
-    private readonly ISender _sender;
-
-    public DriverController(ISender sender)
-    {
-        _sender = sender;
-    }
-
-    [HttpGet("getall")]
-    public async Task<IActionResult> GetAllDriversAsync(QueryOptions options)
-    {
-        var query = new GetAllDriverQuery() { QueryOptions = options };
-        var result = await _sender.Send(query);
-        
-        return Ok(result);
-    }
-}
-
-🏗 Mimari Yakıt
-Bu kütüphane; Onion Architecture veya Clean Architecture prensiplerine uygun olarak, komut ve sorgu işlemlerini birbirinden ayırarak yönetmenize olanak tanır.
-
-Geliştirici: Seyfullah Tanrıverdi
+Developer: Seyfullah Tanrıverdi

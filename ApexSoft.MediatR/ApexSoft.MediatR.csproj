@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net6.0;net7.0;net8.0;net9.0</TargetFrameworks>
+		<TargetFrameworks>net8.0;net9.0</TargetFrameworks>
 		<LangVersion>12.0</LangVersion>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<Title>ApexSoft MediatR</Title>
-		<Version>1.0.3</Version>
+		<Version>1.0.5</Version>
 		<Authors>Seyfullah Tanrıverdi</Authors>
 		<Company>Apex Soft</Company>
 		<Copyright>Copyright</Copyright>
@@ -26,30 +26,12 @@
 	</PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|AnyCPU'">
 		<WarningLevel>8</WarningLevel>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net7.0|AnyCPU'">
-		<WarningLevel>8</WarningLevel>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net7.0|AnyCPU'">
-		<WarningLevel>8</WarningLevel>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net6.0|AnyCPU'">
-		<WarningLevel>8</WarningLevel>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net6.0|AnyCPU'">
-		<WarningLevel>8</WarningLevel>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net48|AnyCPU'">
-		<WarningLevel>8</WarningLevel>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net48|AnyCPU'">
-		<WarningLevel>8</WarningLevel>
-	</PropertyGroup>
+	</PropertyGroup>	
 	<ItemGroup>
 		<Content Include="apexicon.ico" />
 	</ItemGroup>
 	<ItemGroup>
-		<None Include="D:\Projeler\Calismalarim\Functionals\ApexSoft.MediatR\ApexSoft.MediatR\apex-128.png">
+		<None Include="apex-128.png">
 			<Pack>True</Pack>
 			<PackagePath>\</PackagePath>
 		</None>
